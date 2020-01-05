@@ -72,6 +72,8 @@ class Response:
     self.device_id = self.payload[0]
     self.command_type = self.payload[1]
     self.data = self.payload[2:-1]
+    self.display_source = self.data[0:5]
+    self.display_record = self.data[6:11]
     self.poweroff    = self.data[0] == 255
     self.powering_on = not self.poweroff and self.data[5] == 255
 
