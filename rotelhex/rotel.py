@@ -9,7 +9,7 @@ DEFAULT_TIMEOUT = 5
 
 class Rotel:
   def __init__(self, port=DEFAULT_PORT, baudrate=DEFAULT_BAUD, timeout=DEFAULT_TIMEOUT):
-    self.serial = serial.Serial(port, baudrate=baudrate, timeout=DEFAULT_TIMEOUT)
+    self.serial = serial.Serial(port, baudrate=baudrate, timeout=timeout)
   def send_and_read(self,command):
     self.write(command.raw)
     return self.read_all()
