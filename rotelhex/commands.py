@@ -53,9 +53,11 @@ class Command:
     self.data         = data
     self.device_id    = device_id
     self.command_type = command_type
-    bs = self.device_id + self.command_type + self.data
-    self.count = len(bs).to_bytes(1,'big')
-    bs = self.count + bs
+
+    payload = self.device_id + self.command_type + self.data
+    self.count = len(payload).to_bytes(1,'big')
+
+    bs = self.count + payload
     self.chksum = sum(bs).to_bytes(1,'big')
     bs += self.chksum
     self.raw = MAGIC_PREFIX + meta_encode(bs)
@@ -67,6 +69,7 @@ class Response:
   def __init__(self, raw):
     self.raw = raw
     self.payload = meta_decode(raw)
+
     chksum = self.payload[-1]
     self.bad_checksum = sum(self.payload[:-1]) == chksum
     self.device_id = self.payload[0]
