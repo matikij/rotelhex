@@ -20,7 +20,7 @@ CODES = {
  "record_aux1"   : b"\x0f",
  "record_aux2"   : b"\x10",
  "record_tape1"  : b"\x11",
- "record_tape2"  : b"\x12",
+ "record_off"    : b"\x12",
  "record_select" : b"\x1a",
  "char_enter"    : b"\x16",
  "char_next"     : b"\x17",
