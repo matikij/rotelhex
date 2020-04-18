@@ -72,7 +72,7 @@ class Rotel:
 
   def set_label(self,function,label):
     if len(label) > 5:
-      raise ValueError("label cannot be longer that 5 characters")
+      raise ValueError("label cannot be longer than 5 characters")
     indices = [ charmap.CHARMAP.index(c) for c in label ]
     set_function_code = commands.CODES["source_" + function]
     self.send(commands.Command(set_function_code))
