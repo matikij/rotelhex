@@ -6,19 +6,20 @@ import time
 
 from . import commands
 from . import charmap
+from . import display
 
 DEFAULT_PORT    = '/dev/ttyS0'
 DEFAULT_BAUD    = 2400
 DEFAULT_TIMEOUT = 5
 
 class Rotel:
-  def __init__(self, port=DEFAULT_PORT, baudrate=DEFAULT_BAUD, timeout=DEFAULT_TIMEOUT, debug=False):
+  def __init__(self, port=DEFAULT_PORT, baudrate=DEFAULT_BAUD, timeout=DEFAULT_TIMEOUT, display_callbacks=[], debug=False):
     self._serial         = serial.Serial(port, baudrate=baudrate, timeout=timeout)
     self._debug          = debug
     self._serial_lock    = threading.Lock()
-    self._display        = Display()
+    self._display        = display.Display(callbacks=display_callbacks)
     self._run_monitor    = True
-    self._monitor_thread = threading.Thread(target=self.monitor)
+    self._monitor_thread = threading.Thread(target=self.__monitor)
 
     self._monitor_thread.daemon = True
     self._monitor_thread.start()
@@ -58,7 +59,7 @@ class Rotel:
   def display(self):
       return str(self._display)
 
-  def monitor(self):
+  def __monitor(self):
     while self._run_monitor:
       if self._serial.is_open:
         ready = select.select([self._serial],[],[])[0]
@@ -69,6 +70,9 @@ class Rotel:
       else:
         print("Serial port not open, trying to fix")
         self._serial.open()
+
+  def monitor_join(self):
+    self._monitor_thread.join()
 
   def set_label(self,function,label):
     if len(label) > 5:
@@ -94,55 +98,3 @@ def add_command(cls, name, code):
 
 for name,code in commands.CODES.items():
   add_command(Rotel, name, code)
-
-class Display:
-  def __init__(self):
-    self._lock             = threading.Lock()
-    self._source           = b"     "
-    self._record           = b"     "
-    self._label_change     = False
-    self._current_char_idx = None
-    self._current_char     = None
-
-  def update(self, response):
-    prev_source = ""
-    prev_record = ""
-    with self._lock:
-      prev_source = self._source
-      prev_record = self._record
-      self._source = response.display_source
-      self._record = response.display_record
-    # print("update: {} {}".format(prev_source,response.display_source))
-    if self._label_change:
-      source_diff = [i for i in range(len(prev_source)) if prev_source[i] != response.display_source[i] ]
-      if len(source_diff) == 1:
-        self._current_char_idx = source_diff[0]
-        if prev_source[self._current_char_idx] == b' '[0]: # what I want is 32
-          self._current_char = bytes([response.display_source[self._current_char_idx]])
-
-  @property
-  def source(self):
-    with self._lock:
-      return self._source
-
-  @property
-  def record(self):
-    with self._lock:
-      return self._record
-
-  @property
-  def label_change(self):
-    return self._label_change
-
-  @label_change.setter
-  def label_change(self,val):
-    self._label_change = val
-    if not val:
-      self._current_char_idx = None
-      self._current_char     = None
-
-  def __str__(self):
-    ret = "{} {}".format(self.source.decode("cp850"),self.record.decode("cp850"))
-    if self._label_change:
-      ret += " current_char: {}, idx: {}".format(self._current_char, self._current_char_idx)
-    return ret
