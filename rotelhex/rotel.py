@@ -1,8 +1,9 @@
-import serial
-import time
-import threading
 import select
+import serial
+import threading
 import time
+
+from importlib import import_module
 
 from . import commands
 from . import charmap
@@ -13,7 +14,12 @@ DEFAULT_BAUD    = 2400
 DEFAULT_TIMEOUT = 5
 
 class Rotel:
-  def __init__(self, port=DEFAULT_PORT, baudrate=DEFAULT_BAUD, timeout=DEFAULT_TIMEOUT, display_callbacks=[], debug=False):
+  def __init__(self, model, port=DEFAULT_PORT, baudrate=DEFAULT_BAUD, timeout=DEFAULT_TIMEOUT, display_callbacks=[], restart_on_init=True, debug=False):
+
+    self._model=import_module("..commands.{}".format(model),__name__)
+    for name,code in self._model.CODES.items():
+      add_command(Rotel, name, code)
+
     self._serial         = serial.Serial(port, baudrate=baudrate, timeout=timeout)
     self._debug          = debug
     self._serial_lock    = threading.Lock()
@@ -24,11 +30,14 @@ class Rotel:
     self._monitor_thread.daemon = True
     self._monitor_thread.start()
 
-    # self.update_display()
+    if restart_on_init:
+        self.restart()
 
-  def update_display(self):
-    self.label_change()
-    self.label_change()
+  def restart(self):
+    if self._debug: print("Restarting on initialization")
+    self.power_toggle()
+    time.sleep(3)
+    self.power_toggle()
 
   def send(self,command):
     self.write(command.raw)
@@ -78,7 +87,7 @@ class Rotel:
     if len(label) > 5:
       raise ValueError("label cannot be longer than 5 characters")
     indices = [ charmap.CHARMAP.index(c) for c in label ]
-    set_function_code = commands.CODES["source_" + function]
+    set_function_code = self._model.CODES["source_" + function]
     self.send(commands.Command(set_function_code))
     self.label_change()
     for index in indices:
@@ -95,6 +104,3 @@ def add_command(cls, name, code):
   command.__doc__  = "Execute {} command".format(name)
   command.__name__ = name
   setattr(cls, command.__name__, command)
-
-for name,code in commands.CODES.items():
-  add_command(Rotel, name, code)
