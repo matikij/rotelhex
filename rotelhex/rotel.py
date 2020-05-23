@@ -31,12 +31,12 @@ class Rotel:
     self._monitor_thread.start()
 
     if restart_on_init:
+        if self._debug: print("Restarting on initialization")
         self.restart()
 
   def restart(self):
-    if self._debug: print("Restarting on initialization")
     self.power_toggle()
-    time.sleep(3)
+    time.sleep(5)
     self.power_toggle()
 
   def send(self,command):
@@ -87,8 +87,7 @@ class Rotel:
     if len(label) > 5:
       raise ValueError("label cannot be longer than 5 characters")
     indices = [ charmap.CHARMAP.index(c) for c in label ]
-    set_function_code = self._model.CODES["source_" + function]
-    self.send(commands.Command(set_function_code))
+    self.set_source(function)
     self.label_change()
     for index in indices:
       for i in range(index):
@@ -96,6 +95,13 @@ class Rotel:
       self.char_enter()
     if len(indices) < 5:
       self.label_change()
+
+  def set_source(self, function):
+    set_function_code = self._model.CODES["source_" + function]
+    self.send(commands.Command(set_function_code))
+  def set_record(self, function):
+    set_function_code = self._model.CODES["record_" + function]
+    self.send(commands.Command(set_function_code))
 
 def add_command(cls, name, code):
   def command(self):
