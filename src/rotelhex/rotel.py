@@ -97,11 +97,12 @@ class Rotel:
       self.label_change()
 
   def set_source(self, function):
-    set_function_code = self._model.CODES["source_" + function]
-    self.send(commands.Command(set_function_code))
+    self.send_command("source_" + function)
   def set_record(self, function):
-    set_function_code = self._model.CODES["record_" + function]
-    self.send(commands.Command(set_function_code))
+    self.send_command("record_" + function)
+  def send_command(name):
+    code = self._model.CODES[name]
+    self.send(commands.Command(code))
 
 def add_command(cls, name, code):
   def command(self):
