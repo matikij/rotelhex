@@ -100,7 +100,7 @@ class Rotel:
     self.send_command("source_" + function)
   def set_record(self, function):
     self.send_command("record_" + function)
-  def send_command(name):
+  def send_command(self, name):
     code = self._model.CODES[name]
     self.send(commands.Command(code))
 
