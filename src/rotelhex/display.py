@@ -1,4 +1,5 @@
-import threading
+import asyncio
+import inspect
 
 BASIC_FUNTIONS=[
   b"PHONO",
@@ -15,7 +16,7 @@ BASIC_FUNTIONS=[
 class Display:
   def __init__(self, callbacks=[]):
     self._callbacks        = callbacks
-    self._lock             = threading.Lock()
+    self._lock             = asyncio.Lock()
     self._source           = b"     "
     self._basic_source     = b"     "
     self._record           = b"     "
@@ -24,19 +25,22 @@ class Display:
     self._current_char_idx = None
     self._current_char     = None
 
-  def update(self, response):
+  async def update(self, response):
     prev_source = ""
     prev_basic_source = ""
     prev_record = ""
     prev_basic_record = ""
-    with self._lock:
+    async with self._lock:
       update = DisplayUpdate(self, response)
       self._source = response.display_source
       self._record = response.display_record
       self._basic_source = update.curr_basic_source
       self._basic_record = update.curr_basic_record
     for callback in self._callbacks:
-      callback(update)
+      if inspect.iscoroutinefunction(callback):
+        await callback(update)
+      else:
+        callback(update)
     if self._label_change:
       source_diff = [i for i in range(len(update.prev_source)) if update.prev_source[i] != response.display_source[i] ]
       if len(source_diff) == 1:
@@ -45,13 +49,23 @@ class Display:
           self._current_char = bytes([response.display_source[self._current_char_idx]])
 
   @property
-  def source(self):
-    with self._lock:
+  async def basic_source(self):
+    async with self._lock:
+      return self._basic_source
+
+  @property
+  async def source(self):
+    async with self._lock:
       return self._source
 
   @property
-  def record(self):
-    with self._lock:
+  async def basic_record(self):
+    async with self._lock:
+      return self._basic_record
+
+  @property
+  async def record(self):
+    async with self._lock:
       return self._record
 
   @property
