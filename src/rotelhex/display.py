@@ -13,6 +13,8 @@ BASIC_FUNTIONS=[
   b" OFF "
 ]
 
+STANDBY=b"\xff\xff\xff\xff\xff"
+
 class Display:
   def __init__(self, callbacks=[]):
     self._callbacks        = callbacks
@@ -21,6 +23,7 @@ class Display:
     self._basic_source     = b"     "
     self._record           = b"     "
     self._basic_record     = b"     "
+    self._power_state      = "unknown"
     self._label_change     = False
     self._current_char_idx = None
     self._current_char     = None
@@ -36,6 +39,7 @@ class Display:
       self._record = response.display_record
       self._basic_source = update.curr_basic_source
       self._basic_record = update.curr_basic_record
+      self._power_state  = update.power_state
     for callback in self._callbacks:
       if inspect.iscoroutinefunction(callback):
         await callback(update)
@@ -93,15 +97,25 @@ class DisplayUpdate:
     self._prev_basic_record = display._basic_record
     self._curr_source = response.display_source
     self._curr_record = response.display_record
-    if self._curr_source in BASIC_FUNTIONS:
-      self._curr_basic_source = self._curr_source
+    if self._curr_source == STANDBY and self._curr_record == STANDBY:
+      self._power_state = "standby"
+      self._curr_basic_source = STANDBY
+      self._curr_basic_record = STANDBY
     else:
-      self._curr_basic_source = self._prev_basic_source
-    if self._curr_record in BASIC_FUNTIONS:
-      self._curr_basic_record = self._curr_record
-    else:
-      self._curr_basic_record = self._prev_basic_record
+      self._power_state = "on"
+      if self._curr_source in BASIC_FUNTIONS:
+        self._curr_basic_source = self._curr_source
+      else:
+        self._curr_basic_source = self._prev_basic_source
+      if self._curr_record in BASIC_FUNTIONS:
+        self._curr_basic_record = self._curr_record
+      else:
+        self._curr_basic_record = self._prev_basic_record
   
+  @property
+  def power_state(self):
+    return self._power_state
+
   @property
   def prev_source(self):
     return self._prev_source
