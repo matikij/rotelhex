@@ -28,9 +28,9 @@ class Rotel:
       await self.restart()
 
   async def restart(self):
-    await self.power_toggle()
+    await self.power_off()
     await asyncio.sleep(4)
-    await self.power_toggle()
+    await self.power_on()
     await asyncio.sleep(4)
 
   async def send(self,command):
