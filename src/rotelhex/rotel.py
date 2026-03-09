@@ -56,7 +56,7 @@ class Rotel:
         start_reading=time.time()
         if len(responses) >= length:
           break
-    except IncompleteReadError as e:
+    except asyncio.IncompleteReadError as e:
       print(e)
       print("Got {}".format(e.partial))
     return responses
